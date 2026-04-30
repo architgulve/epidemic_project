@@ -211,30 +211,18 @@ function findCluster(node, targetId) {
 /**
  * Aggregate SEIRD state for a cluster on a given day.
  * @param {number[]} nodeIds - node IDs in the cluster
- * @param {object[]} allNodes - all nodes array from API
+ * @param {Map} nodeLookup - Map of id -> node
  * @param {number} day - 0-indexed day
  * @returns {{ S, E, I, R, D, count }}
  */
-export function aggregateClusterState(nodeIds, allNodes, day) {
+export function aggregateClusterState(nodeIds, nodeLookup, day) {
   if (!nodeIds || nodeIds.length === 0) return { S: 0, E: 0, I: 0, R: 0, D: 0, count: 0 };
-
-  // Note: allNodes is an array, we need to find the node with the given ID
-  // For performance, we assume allNodes is the same array passed to buildHierarchy
-  // and we can build a temporary lookup if needed, but since this is called in the draw loop,
-  // it's better if we passed a Map. However, to keep the API stable, we'll search.
-  // Actually, we can pre-build a lookup in the component and pass it here, or just use a Map in the store.
-  
-  // Optimization: use a Map for lookups if the array is large
-  if (!allNodes._lookup) {
-    allNodes._lookup = new Map();
-    allNodes.forEach(n => allNodes._lookup.set(n.id, n));
-  }
 
   let totals = { S: 0, E: 0, I: 0, R: 0, D: 0 };
   let count = 0;
 
   for (const id of nodeIds) {
-    const node = allNodes._lookup.get(id);
+    const node = nodeLookup.get(id);
     if (!node || !node.days || !node.days[day]) continue;
     const d = node.days[day];
     totals.S += d.S;

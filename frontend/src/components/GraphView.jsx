@@ -1,4 +1,5 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import * as d3 from 'd3';
 import { useStore } from '../store';
 import { getNodeColor } from '../utils/colors';
@@ -106,7 +107,7 @@ export default function GraphView() {
     for (const n of simNodes) {
       const state = n._type === 'node'
         ? nodeLookup.get(n._origId)?.days?.[day]
-        : aggregateClusterState(n._nodeIds, nodes, day);
+        : aggregateClusterState(n._nodeIds, nodeLookup, day);
 
       const color = getNodeColor(state);
       const r = n._radius;
@@ -213,14 +214,13 @@ export default function GraphView() {
       for (let i = simNodes.length - 1; i >= 0; i--) {
         const n = simNodes[i];
         const dx = px - n.x, dy = py - n.y;
-        if (dx * dx + dy * dy < (n._radius + 6) ** 2) return n;
+        if (dx * dx + dy * dy < (n._radius + 8 / t.k) ** 2) return n;
       }
       return null;
     };
 
     const handleMouseMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const [mx, my] = d3.pointer(e);
       const found = findNode(mx, my);
       hoveredRef.current = found;
       canvas.style.cursor = found ? 'pointer' : 'grab';
@@ -229,7 +229,7 @@ export default function GraphView() {
         const day = useStore.getState().currentDay;
         const state = found._type === 'node'
           ? nodeLookup.get(found._origId)?.days?.[day]
-          : aggregateClusterState(found._nodeIds, nodes, day);
+          : aggregateClusterState(found._nodeIds, nodeLookup, day);
 
         setTooltip({
           x: e.clientX, y: e.clientY,
@@ -244,12 +244,10 @@ export default function GraphView() {
       draw();
     };
 
-
     const handleClick = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const found = findNode(e.clientX - rect.left, e.clientY - rect.top);
+      const [mx, my] = d3.pointer(e);
+      const found = findNode(mx, my);
       if (found && found._type === 'cluster' && found._item.children) {
-        // Zoom transition effect
         const t = transformRef.current;
         const targetScale = t.k * 3;
         const targetX = w / 2 - found.x * targetScale;
@@ -264,15 +262,16 @@ export default function GraphView() {
       }
     };
 
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('click', handleClick);
-    canvas.addEventListener('mouseleave', () => { hoveredRef.current = null; setTooltip(null); draw(); });
+    zoomSelection.on('mousemove', handleMouseMove);
+    zoomSelection.on('click', handleClick);
+    zoomSelection.on('mouseleave', () => { hoveredRef.current = null; setTooltip(null); draw(); });
 
     return () => {
       sim.stop();
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('click', handleClick);
-      d3.select(canvas).on('.zoom', null);
+      zoomSelection.on('.zoom', null);
+      zoomSelection.on('mousemove', null);
+      zoomSelection.on('click', null);
+      zoomSelection.on('mouseleave', null);
     };
   }, [visibleItems, draw, drillInto, nodes]);
 
@@ -301,20 +300,20 @@ export default function GraphView() {
 
       <canvas ref={canvasRef} className="w-full h-full" />
 
-      {/* Tooltip */}
-      {tooltip && (
+      {/* Tooltip Portal */}
+      {tooltip && createPortal(
         <div
-          className="fixed z-50 bg-[#0a0a0f]/90 backdrop-blur-2xl rounded-2xl p-4 pointer-events-none max-w-xs border border-white/10 shadow-2xl"
-          style={{ left: tooltip.x + 16, top: tooltip.y - 16 }}
+          className="fixed z-[200] bg-[#0a0a0f]/95 backdrop-blur-2xl rounded-2xl p-4 pointer-events-none max-w-xs border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+          style={{ left: tooltip.x + 20, top: tooltip.y - 20 }}
         >
           {tooltip.type === 'node' ? (
             <div>
-              <div className="text-xs text-[var(--color-text-muted)] mb-1">Node #{tooltip.id}</div>
-              <div className="grid grid-cols-5 gap-2 text-center">
+              <div className="text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Node Identification · #{tooltip.id}</div>
+              <div className="grid grid-cols-5 gap-3 text-center">
                 {['S', 'E', 'I', 'R', 'D'].map((k) => (
                   <div key={k}>
-                    <div className="text-[10px] text-[var(--color-text-muted)]">{k}</div>
-                    <div className="text-xs font-bold font-mono">
+                    <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{k}</div>
+                    <div className="text-xs font-black text-white font-mono">
                       {((tooltip.state?.[k] || 0) * 100).toFixed(1)}%
                     </div>
                   </div>
@@ -323,23 +322,24 @@ export default function GraphView() {
             </div>
           ) : (
             <div>
-              <div className="text-xs text-[var(--color-text-muted)] mb-1">
-                Cluster · {tooltip.count.toLocaleString()} nodes
+              <div className="text-[10px] font-black text-indigo-400 mb-2 uppercase tracking-widest">
+                Cluster Level · {tooltip.count.toLocaleString()} Nodes
               </div>
-              <div className="grid grid-cols-5 gap-2 text-center">
+              <div className="grid grid-cols-5 gap-3 text-center">
                 {['S', 'E', 'I', 'R', 'D'].map((k) => (
                   <div key={k}>
-                    <div className="text-[10px] text-[var(--color-text-muted)]">{k}</div>
-                    <div className="text-xs font-bold font-mono">
+                    <div className="text-[9px] font-black text-slate-500 uppercase mb-1">{k}</div>
+                    <div className="text-xs font-black text-white font-mono">
                       {((tooltip.state?.[k] || 0) * 100).toFixed(1)}%
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="text-[10px] text-indigo-400 mt-1.5">Click to drill down →</div>
+              <div className="text-[9px] font-black text-indigo-500 mt-3 uppercase tracking-tighter animate-pulse">Click to explore cluster →</div>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
