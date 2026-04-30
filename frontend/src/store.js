@@ -63,6 +63,12 @@ export const useStore = create((set, get) => ({
     breadcrumbs: [{ id: null, label: 'All Nodes' }],
   }),
 
+  // --- Sync State ---
+  graphTransform: { x: 0, y: 0, k: 1 },
+  graphHoveredId: null,
+  setGraphTransform: (t) => set({ graphTransform: t }),
+  setGraphHoveredId: (id) => set({ graphHoveredId: id }),
+
   // --- Actions ---
   uploadAndPredict: async () => {
     const { file, interventions, zoneInterventions, baseline } = get();

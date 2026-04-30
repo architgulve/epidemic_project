@@ -5,7 +5,7 @@ import { useStore } from '../store';
 import { getNodeColor } from '../utils/colors';
 import { buildHierarchy, getVisibleItems, aggregateClusterState } from '../utils/clustering';
 
-export default function GraphView() {
+export default function GraphView({ source = 'active' }) {
   const canvasRef = useRef(null);
   const wrapperRef = useRef(null);
   const simRef = useRef(null);
@@ -13,9 +13,19 @@ export default function GraphView() {
   const transformRef = useRef(d3.zoomIdentity);
   const hoveredRef = useRef(null);
 
-  const nodes = useStore((s) => s.nodes);
-  const edgesSrc = useStore((s) => s.edgesSrc);
-  const edgesDst = useStore((s) => s.edgesDst);
+  // Store access
+  const baseline = useStore((s) => s.baseline);
+  const scenario = useStore((s) => s.scenario);
+  const activeNodes = useStore((s) => s.nodes);
+  const activeEdgesSrc = useStore((s) => s.edgesSrc);
+  const activeEdgesDst = useStore((s) => s.edgesDst);
+
+  // Sync state
+  const sharedTransform = useStore((s) => s.graphTransform);
+  const setSharedTransform = useStore((s) => s.setGraphTransform);
+  const sharedHoveredId = useStore((s) => s.graphHoveredId);
+  const setSharedHoveredId = useStore((s) => s.setGraphHoveredId);
+
   const currentDay = useStore((s) => s.currentDay);
   const currentClusterId = useStore((s) => s.currentClusterId);
   const drillInto = useStore((s) => s.drillInto);
@@ -23,6 +33,25 @@ export default function GraphView() {
   const navigateTo = useStore((s) => s.navigateTo);
 
   const [tooltip, setTooltip] = useState(null);
+
+  // Resolve which data to use
+  const nodes = useMemo(() => {
+    if (source === 'baseline') return baseline?.nodes || [];
+    if (source === 'scenario') return scenario?.nodes || [];
+    return activeNodes;
+  }, [source, baseline, scenario, activeNodes]);
+
+  const edgesSrc = useMemo(() => {
+    if (source === 'baseline') return baseline?.edges_src || [];
+    if (source === 'scenario') return scenario?.edges_src || [];
+    return activeEdgesSrc;
+  }, [source, baseline, scenario, activeEdgesSrc]);
+
+  const edgesDst = useMemo(() => {
+    if (source === 'baseline') return baseline?.edges_dst || [];
+    if (source === 'scenario') return scenario?.edges_dst || [];
+    return activeEdgesDst;
+  }, [source, baseline, scenario, activeEdgesDst]);
 
   // Build hierarchy once
   const hierarchy = useMemo(() => {
@@ -71,6 +100,17 @@ export default function GraphView() {
     nodes.forEach(n => m.set(n.id, n));
     return m;
   }, [nodes]);
+
+  // Update transformRef when shared state changes
+  useEffect(() => {
+    transformRef.current = new d3.ZoomTransform(sharedTransform.k, sharedTransform.x, sharedTransform.y);
+  }, [sharedTransform]);
+
+  // Update hoveredRef when shared hover changes
+  useEffect(() => {
+    const found = nodesDataRef.current.find(n => n._origId === sharedHoveredId);
+    hoveredRef.current = found;
+  }, [sharedHoveredId]);
 
   // Draw loop
   const draw = useCallback(() => {
@@ -163,13 +203,18 @@ export default function GraphView() {
     canvas.width = w;
     canvas.height = h;
 
-    const simNodes = visibleItems.map((item) => {
+    const simNodes = visibleItems.map((item, idx) => {
       const isNode = item.type === 'node' && item.count === 1;
       const count = item.count || 1;
       const radius = isNode ? 5 : Math.max(7, Math.min(32, Math.sqrt(count) * 1.8));
+      
+      // Deterministic initial layout (spiral/circle based on index)
+      const angle = idx * (Math.PI * 2 / Math.min(visibleItems.length, 50));
+      const dist = 50 + idx * 2;
+      
       return {
-        x: w / 2 + (Math.random() - 0.5) * w * 0.6,
-        y: h / 2 + (Math.random() - 0.5) * h * 0.6,
+        x: w / 2 + Math.cos(angle) * dist,
+        y: h / 2 + Math.sin(angle) * dist,
         _origId: isNode ? (item.nodeIds?.[0] ?? item.id) : item.id,
         _type: isNode ? 'node' : 'cluster',
         _count: count,
@@ -197,6 +242,7 @@ export default function GraphView() {
       .scaleExtent([0.2, 8])
       .on('zoom', (e) => {
         transformRef.current = e.transform;
+        setSharedTransform({ x: e.transform.x, y: e.transform.y, k: e.transform.k });
         draw();
       });
     const zoomSelection = d3.select(canvas);
@@ -223,6 +269,7 @@ export default function GraphView() {
       const [mx, my] = d3.pointer(e);
       const found = findNode(mx, my);
       hoveredRef.current = found;
+      setSharedHoveredId(found?._origId || null);
       canvas.style.cursor = found ? 'pointer' : 'grab';
 
       if (found) {
@@ -264,7 +311,12 @@ export default function GraphView() {
 
     zoomSelection.on('mousemove', handleMouseMove);
     zoomSelection.on('click', handleClick);
-    zoomSelection.on('mouseleave', () => { hoveredRef.current = null; setTooltip(null); draw(); });
+    zoomSelection.on('mouseleave', () => { 
+      hoveredRef.current = null; 
+      setSharedHoveredId(null);
+      setTooltip(null); 
+      draw(); 
+    });
 
     return () => {
       sim.stop();
@@ -273,13 +325,19 @@ export default function GraphView() {
       zoomSelection.on('click', null);
       zoomSelection.on('mouseleave', null);
     };
-  }, [visibleItems, draw, drillInto, nodes]);
+  }, [visibleItems, draw, drillInto, nodes, setSharedTransform, setSharedHoveredId]);
 
   // Redraw when day changes
   useEffect(() => { draw(); }, [currentDay, draw]);
 
   return (
     <div ref={wrapperRef} className="w-full h-full relative">
+      {/* Source Label */}
+      <div className="absolute top-4 right-4 z-10 bg-[#0a0a0f]/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
+        <div className={`w-1.5 h-1.5 rounded-full ${source === 'baseline' ? 'bg-slate-400' : 'bg-indigo-400 animate-pulse'}`} />
+        {source === 'active' ? 'Live Data' : source}
+      </div>
+
       {/* Breadcrumbs */}
       <div className="absolute top-4 left-4 z-10 flex items-center gap-1 bg-[#0a0a0f]/60 backdrop-blur-xl rounded-2xl px-4 py-2 border border-white/5 shadow-2xl">
         {breadcrumbs.map((bc, i) => (

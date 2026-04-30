@@ -150,7 +150,7 @@ function computeCommunities(nodeIds, adj, iterations = 10) {
   nodeIds.forEach(id => { labels[id] = id; });
 
   for (let iter = 0; iter < iterations; iter++) {
-    const shuffled = [...nodeIds].sort(() => Math.random() - 0.5);
+    const shuffled = [...nodeIds]; // Deterministic iteration order
     let changed = false;
     for (const u of shuffled) {
       const neighbors = adj.get(u) || [];

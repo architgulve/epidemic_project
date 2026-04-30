@@ -111,7 +111,16 @@ export default function App() {
               >
                 <div className={`h-full w-full ${activeView !== 'upload' ? 'bg-[#0a0a0f]/40 backdrop-blur-3xl rounded-[40px] overflow-hidden shadow-2xl border border-white/10' : ''}`}>
                   {activeView === 'upload' && <UploadView />}
-                  {(activeView === 'graph' || (activeView === 'graph' && isLoading)) && <GraphView />}
+                  {(activeView === 'graph' || (activeView === 'graph' && isLoading)) && (
+                    isComparing ? (
+                      <div className="grid grid-cols-2 h-full gap-px bg-white/5">
+                        <GraphView source="baseline" />
+                        <GraphView source="scenario" />
+                      </div>
+                    ) : (
+                      <GraphView source="active" />
+                    )
+                  )}
                   {activeView === 'map' && hasData && (
                     isComparing ? (
                       <div className="grid grid-cols-2 h-full gap-px bg-white/5">
