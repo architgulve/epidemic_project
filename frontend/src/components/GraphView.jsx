@@ -331,24 +331,32 @@ export default function GraphView({ source = 'active' }) {
   useEffect(() => { draw(); }, [currentDay, draw]);
 
   return (
-    <div ref={wrapperRef} className="w-full h-full relative">
+    <div ref={wrapperRef} className="w-full h-full relative cursor-crosshair">
+      {/* Technical Grid Overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-20" 
+           style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+      
+      {/* Crosshairs */}
+      <div className="absolute top-1/2 left-0 w-full h-px bg-white/5 pointer-events-none" />
+      <div className="absolute left-1/2 top-0 w-px h-full bg-white/5 pointer-events-none" />
+
       {/* Source Label */}
-      <div className="absolute top-4 right-4 z-10 bg-[#0a0a0f]/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${source === 'baseline' ? 'bg-slate-400' : 'bg-indigo-400 animate-pulse'}`} />
-        {source === 'active' ? 'Live Data' : source}
+      <div className="absolute top-4 right-4 z-10 bg-black/80 px-3 py-1 border border-white/10 text-[9px] font-black uppercase text-indigo-400 tracking-[0.2em] flex items-center gap-2">
+        <div className={`w-1 h-1 ${source === 'baseline' ? 'bg-slate-500' : 'bg-rose-500 animate-pulse'}`} />
+        ID::{source.toUpperCase()}
       </div>
 
       {/* Breadcrumbs */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-1 bg-[#0a0a0f]/60 backdrop-blur-xl rounded-2xl px-4 py-2 border border-white/5 shadow-2xl">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-0 bg-black/60 border border-white/10 p-0.5">
         {breadcrumbs.map((bc, i) => (
-          <span key={i} className="flex items-center gap-1">
-            {i > 0 && <span className="text-slate-600 text-xs">›</span>}
+          <span key={i} className="flex items-center">
+            {i > 0 && <span className="text-slate-700 px-1 text-[10px]">/</span>}
             <button
               onClick={() => navigateTo(i)}
-              className={`text-xs px-2 py-1 rounded-lg transition-all
+              className={`text-[9px] px-3 py-1.5 transition-all font-black uppercase tracking-widest
                 ${i === breadcrumbs.length - 1
-                  ? 'text-indigo-400 font-black bg-indigo-500/10'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                  ? 'text-indigo-400 bg-indigo-500/10'
+                  : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
             >
               {bc.label}
             </button>

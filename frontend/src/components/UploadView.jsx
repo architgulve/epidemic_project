@@ -56,7 +56,7 @@ export default function UploadView() {
               <span className="text-indigo-400">Epi</span>Scope
             </h1>
             <p className="text-xl text-slate-400 max-w-xl leading-relaxed font-medium">
-              Advanced Neural ODE forecasting engine. Upload your population nodes to simulate transmission dynamics at scale.
+              Advanced Neural ODE forecasting engine. Upload your population nodes to predict transmission dynamics at scale.
             </p>
           </div>
 

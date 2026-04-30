@@ -72,29 +72,79 @@ function HeatmapOverlay({ source }) {
         canvas.width = size.x;
         canvas.height = size.y;
         
-        const origin = this._map.getPixelOrigin();
         const panePos = L.DomUtil.getPosition(this._map.getPanes().mapPane);
         L.DomUtil.setPosition(canvas, { x: -panePos.x, y: -panePos.y });
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. Weather Map Palette (Spectral) - Boosted Sensitivity
+        const paletteCanvas = document.createElement('canvas');
+        paletteCanvas.width = 1;
+        paletteCanvas.height = 256;
+        const pCtx = paletteCanvas.getContext('2d');
+        const gradient = pCtx.createLinearGradient(0, 0, 0, 256);
+        gradient.addColorStop(0.01, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(0.1, 'rgba(0, 100, 255, 0.5)'); 
+        gradient.addColorStop(0.2, 'rgb(0, 255, 255)');      
+        gradient.addColorStop(0.35, 'rgb(50, 255, 50)');       
+        gradient.addColorStop(0.5, 'rgb(255, 255, 0)');      
+        gradient.addColorStop(0.7, 'rgb(255, 60, 0)');        
+        gradient.addColorStop(1.0, 'rgb(255, 30, 30)');        // VIBRANT RED (NO DARK BORDER)
+        pCtx.fillStyle = gradient;
+        pCtx.fillRect(0, 0, 1, 256);
+        const palette = pCtx.getImageData(0, 0, 1, 256).data;
+
+        // 2. Draw blurred intensity mass
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.filter = `blur(${Math.max(8, 12 * (this._map.getZoom() / 12))}px)`;
         
         zones.forEach((z) => {
           const severity = z.severity[currentDay] || 0;
           if (severity < 0.001) return;
 
           const point = this._map.latLngToContainerPoint([z.clat, z.clng]);
-          const radius = Math.max(20, 100 * severity * (this._map.getZoom() / 10));
+          const radius = Math.max(40, 140 * severity * (this._map.getZoom() / 11));
           
-          const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
-          const color = severity > 0.1 ? '255, 60, 100' : '129, 140, 248';
-          gradient.addColorStop(0, `rgba(${color}, ${Math.min(0.6, severity * 4)})`);
-          gradient.addColorStop(1, `rgba(${color}, 0)`);
-
+          // Main plume - BOOSTED WEIGHT
+          const g = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
+          const weight = Math.min(0.8, severity * 1.5); 
+          g.addColorStop(0, `rgba(0, 0, 0, ${weight})`);
+          g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          
+          ctx.fillStyle = g;
           ctx.beginPath();
           ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = gradient;
+          ctx.fill();
+
+          // High-Intensity Core - BOOSTED WEIGHT
+          const coreRadius = radius * 0.4;
+          const cg = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, coreRadius);
+          cg.addColorStop(0, `rgba(0, 0, 0, ${Math.min(1, severity * 2.5)})`);
+          cg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = cg;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, coreRadius, 0, Math.PI * 2);
           ctx.fill();
         });
+
+        // 3. Colorize and Texturize
+        ctx.filter = 'none'; 
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const imgData = img.data;
+        for (let i = 0; i < imgData.length; i += 4) {
+          const alpha = imgData[i + 3];
+          if (alpha > 0) {
+            const offset = alpha * 4;
+            imgData[i] = palette[offset];
+            imgData[i + 1] = palette[offset + 1];
+            imgData[i + 2] = palette[offset + 2];
+            
+            const noise = (Math.random() * 8 - 4);
+            // REDUCED ALPHA MULTIPLIER FOR TRANSPARENCY
+            imgData[i + 3] = Math.max(0, Math.min(255, alpha * 0.7 + noise));
+          }
+        }
+        ctx.putImageData(img, 0, 0);
       }
     });
 

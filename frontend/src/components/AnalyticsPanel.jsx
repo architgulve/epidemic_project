@@ -73,24 +73,24 @@ export default function AnalyticsPanel() {
   const sPeakCount = metrics.comparison?.sPeakCount || 0;
 
   return (
-    <div className="h-full w-full bg-[#0a0a0f]/40 backdrop-blur-3xl rounded-[40px] flex flex-col overflow-hidden border border-white/10 shadow-2xl relative">
+    <div className="h-full w-full bg-[#08080c] flex flex-col overflow-hidden relative">
       {isExpanded && createPortal(
         <ExpandedAnalytics onClose={() => setIsExpanded(false)} />,
         document.body
       )}
       
-      <div className="p-8 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+      <div className="p-6 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-black text-white uppercase tracking-widest mb-1">Medical Analytics</h3>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-            Clinical Decision Support System
+          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-1">DATASTREAM :: MEDICAL_ANALYTICS</h3>
+          <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">
+            NODE-LEVEL SEIRD INTEGRATION
           </p>
         </div>
         <button 
           onClick={() => setIsExpanded(true)}
-          className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-white hover:bg-white/10 transition-all"
+          className="px-3 py-1.5 border border-white/10 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-white hover:border-indigo-500 transition-all bg-black"
         >
-          Expand Analysis
+          FULL_ANALYSIS_MODAL
         </button>
       </div>
 
@@ -132,19 +132,19 @@ export default function AnalyticsPanel() {
 
         {/* Comparison Summary */}
         {isComparing && metrics.comparison && (
-          <div className="p-6 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg space-y-6">
+          <div className="p-4 border border-indigo-500/30 bg-indigo-500/5 space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Policy Efficacy</h4>
-              <span className="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">Compared to Baseline</span>
+              <h4 className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em]">POLICY_EFFICACY_DELTA</h4>
+              <span className="text-[7px] font-black text-emerald-400 border border-emerald-400/30 px-1.5 py-0.5 uppercase tracking-tighter">REF::BASELINE</span>
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-2xl font-black text-emerald-400 tracking-tighter">-{metrics.comparison.peakReduction}%</div>
-                <div className="text-[8px] text-slate-500 font-bold uppercase mt-1">Peak Reduction</div>
+                <div className="text-xl font-black text-emerald-400 tracking-tighter">-{metrics.comparison.peakReduction}%</div>
+                <div className="text-[7px] text-slate-500 font-bold uppercase mt-1">PEAK_REDUCTION</div>
               </div>
               <div>
-                <div className="text-2xl font-black text-white tracking-tighter">-{metrics.comparison.currentDiff}%</div>
-                <div className="text-[8px] text-slate-500 font-bold uppercase mt-1">Active Case Delta</div>
+                <div className="text-xl font-black text-white tracking-tighter">-{metrics.comparison.currentDiff}%</div>
+                <div className="text-[7px] text-slate-500 font-bold uppercase mt-1">ACTIVE_DELTA</div>
               </div>
             </div>
           </div>
@@ -211,21 +211,24 @@ export default function AnalyticsPanel() {
 
 function MetricCard({ label, baseline, scenario, sub, color = "text-white" }) {
   return (
-    <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-5 hover:bg-white/[0.06] transition-all group duration-300">
-      <div className="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-2">{label}</div>
-      <div className="flex items-baseline gap-4">
-        <div>
-          <div className={`text-lg font-black ${color} tracking-tighter`}>{baseline}</div>
-          {scenario && <div className="text-[8px] font-black text-slate-600 uppercase">Baseline</div>}
+    <div className="bg-white/[0.02] border border-white/5 p-3 hover:bg-white/[0.04] transition-all group duration-300 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-0.5 bg-white/5 group-hover:bg-indigo-500/30 transition-all" />
+      <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-2 flex justify-between">
+        <span>{label}</span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <div className="min-w-0 flex-1">
+          <div className={`text-lg font-black ${color} tracking-tighter truncate`}>{baseline}</div>
+          {scenario && <div className="text-[6px] font-black text-slate-600 uppercase">BASE</div>}
         </div>
         {scenario && (
-          <div className="pl-4 border-l border-white/5">
-            <div className="text-lg font-black text-indigo-400 tracking-tighter">{scenario}</div>
-            <div className="text-[8px] font-black text-indigo-600 uppercase">Scenario</div>
+          <div className="pl-2 border-l border-white/5 flex-1 min-w-0">
+            <div className="text-lg font-black text-indigo-400 tracking-tighter truncate">{scenario}</div>
+            <div className="text-[6px] font-black text-indigo-600 uppercase">POLICY</div>
           </div>
         )}
       </div>
-      <div className="text-[9px] font-bold text-slate-600 leading-none mt-2">{sub}</div>
+      <div className="text-[7px] font-bold text-slate-600 leading-none mt-2 font-mono opacity-50 truncate">[{sub}]</div>
     </div>
   );
 }

@@ -56,7 +56,7 @@ export default function App() {
                     ? 'bg-indigo-500 text-white shadow-xl shadow-indigo-500/30'
                     : disabled
                       ? 'text-slate-600 cursor-not-allowed opacity-30'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      : 'text-white-400 hover:text-white hover:bg-white/5'
                   }
                 `}
               >
@@ -81,17 +81,17 @@ export default function App() {
       </nav>
 
       {/* ── Main Content Area ── */}
-      <main className="flex-1 flex flex-col min-h-0 relative p-8 lg:p-10 gap-8">
-        <div className="flex flex-1 min-h-0 gap-8">
+      <main className="flex-1 flex flex-col min-h-0 relative p-4 lg:p-6 gap-4">
+        <div className="flex flex-1 min-h-0 gap-4">
           {/* Left: Stats or Intervention */}
           <AnimatePresence mode="wait">
             {(hasData || isLoading) && activeView !== 'upload' && (
               <motion.div
                 key={hasInsights ? 'intervention' : 'stats'}
-                initial={{ opacity: 0, x: -30 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                className="w-[400px] shrink-0 h-full"
+                exit={{ opacity: 0, x: -10 }}
+                className="w-[360px] shrink-0 h-full tech-border bg-black/40"
               >
                 {hasInsights ? <InterventionPanel /> : <StatsSidebar />}
               </motion.div>
@@ -103,13 +103,13 @@ export default function App() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${activeView}-${isComparing}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 className="h-full w-full"
               >
-                <div className={`h-full w-full ${activeView !== 'upload' ? 'bg-[#0a0a0f]/40 backdrop-blur-3xl rounded-[40px] overflow-hidden shadow-2xl border border-white/10' : ''}`}>
+                <div className={`h-full w-full ${activeView !== 'upload' ? 'bg-[#08080c] tech-border overflow-hidden shadow-2xl' : ''}`}>
                   {activeView === 'upload' && <UploadView />}
                   {(activeView === 'graph' || (activeView === 'graph' && isLoading)) && (
                     isComparing ? (
@@ -140,10 +140,10 @@ export default function App() {
           <AnimatePresence mode="wait">
             {(hasData || isLoading) && activeView !== 'upload' && (
               <motion.div
-                initial={{ opacity: 0, x: 30 }}
+                initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 30 }}
-                className="w-[400px] shrink-0 h-full"
+                exit={{ opacity: 0, x: 10 }}
+                className="w-[380px] shrink-0 h-full tech-border bg-black/40"
               >
                 <AnalyticsPanel />
               </motion.div>
