@@ -51,7 +51,7 @@ function HeatmapOverlay({ source }) {
   useEffect(() => {
     // Create a custom canvas layer
     const CanvasLayer = L.Layer.extend({
-      onAdd: function(map) {
+      onAdd: function (map) {
         this._container = L.DomUtil.create('canvas', 'leaflet-heatmap-layer leaflet-layer');
         this._container.style.pointerEvents = 'none';
         this._container.style.zIndex = 300;
@@ -60,23 +60,23 @@ function HeatmapOverlay({ source }) {
         this._draw();
         map.on('moveend zoomend viewreset', this._draw, this);
       },
-      onRemove: function(map) {
+      onRemove: function (map) {
         map.getPanes().overlayPane.removeChild(this._container);
         map.off('moveend zoomend viewreset', this._draw, this);
       },
-      _draw: function() {
+      _draw: function () {
         if (!this._container || !this._map) return;
         const canvas = this._container;
         const ctx = canvas.getContext('2d');
         const size = this._map.getSize();
         canvas.width = size.x;
         canvas.height = size.y;
-        
+
         const panePos = L.DomUtil.getPosition(this._map.getPanes().mapPane);
         L.DomUtil.setPosition(canvas, { x: -panePos.x, y: -panePos.y });
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
         // 1. Weather Map Palette (Spectral) - Boosted Sensitivity
         const paletteCanvas = document.createElement('canvas');
         paletteCanvas.width = 1;
@@ -84,11 +84,11 @@ function HeatmapOverlay({ source }) {
         const pCtx = paletteCanvas.getContext('2d');
         const gradient = pCtx.createLinearGradient(0, 0, 0, 256);
         gradient.addColorStop(0.01, 'rgba(0, 0, 0, 0)');
-        gradient.addColorStop(0.1, 'rgba(0, 100, 255, 0.5)'); 
-        gradient.addColorStop(0.2, 'rgb(0, 255, 255)');      
-        gradient.addColorStop(0.35, 'rgb(50, 255, 50)');       
-        gradient.addColorStop(0.5, 'rgb(255, 255, 0)');      
-        gradient.addColorStop(0.7, 'rgb(255, 60, 0)');        
+        gradient.addColorStop(0.1, 'rgba(0, 100, 255, 0.5)');
+        gradient.addColorStop(0.2, 'rgb(0, 255, 255)');
+        gradient.addColorStop(0.35, 'rgb(50, 255, 50)');
+        gradient.addColorStop(0.5, 'rgb(255, 255, 0)');
+        gradient.addColorStop(0.7, 'rgb(255, 60, 0)');
         gradient.addColorStop(1.0, 'rgb(255, 30, 30)');        // VIBRANT RED (NO DARK BORDER)
         pCtx.fillStyle = gradient;
         pCtx.fillRect(0, 0, 1, 256);
@@ -97,20 +97,20 @@ function HeatmapOverlay({ source }) {
         // 2. Draw blurred intensity mass
         ctx.globalCompositeOperation = 'lighter';
         ctx.filter = `blur(${Math.max(8, 12 * (this._map.getZoom() / 12))}px)`;
-        
+
         zones.forEach((z) => {
           const severity = z.severity[currentDay] || 0;
           if (severity < 0.001) return;
 
           const point = this._map.latLngToContainerPoint([z.clat, z.clng]);
           const radius = Math.max(40, 140 * severity * (this._map.getZoom() / 11));
-          
+
           // Main plume - BOOSTED WEIGHT
           const g = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
-          const weight = Math.min(0.8, severity * 1.5); 
+          const weight = Math.min(0.8, severity * 1.5);
           g.addColorStop(0, `rgba(0, 0, 0, ${weight})`);
           g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          
+
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
@@ -128,7 +128,7 @@ function HeatmapOverlay({ source }) {
         });
 
         // 3. Colorize and Texturize
-        ctx.filter = 'none'; 
+        ctx.filter = 'none';
         const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const imgData = img.data;
         for (let i = 0; i < imgData.length; i += 4) {
@@ -138,7 +138,7 @@ function HeatmapOverlay({ source }) {
             imgData[i] = palette[offset];
             imgData[i + 1] = palette[offset + 1];
             imgData[i + 2] = palette[offset + 2];
-            
+
             const noise = (Math.random() * 8 - 4);
             // REDUCED ALPHA MULTIPLIER FOR TRANSPARENCY
             imgData[i + 3] = Math.max(0, Math.min(255, alpha * 0.7 + noise));
@@ -218,7 +218,7 @@ function NodeMarkers({ source }) {
         direction: 'top',
         offset: [0, -5]
       });
-      
+
       marker.addTo(lg);
     }
   }, [visibleNodes, currentDay, zoom]);

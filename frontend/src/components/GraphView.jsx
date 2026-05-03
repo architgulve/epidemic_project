@@ -68,7 +68,7 @@ export default function GraphView({ source = 'active' }) {
   // Compute edges between visible items (clusters or nodes)
   const visibleEdges = useMemo(() => {
     if (!visibleItems.length || !edgesSrc.length) return [];
-    
+
     const nodeToVisibleIndex = new Map();
     visibleItems.forEach((item, idx) => {
       item.nodeIds.forEach(nid => {
@@ -83,7 +83,7 @@ export default function GraphView({ source = 'active' }) {
       const v = edgesDst[i];
       const idxU = nodeToVisibleIndex.get(u);
       const idxV = nodeToVisibleIndex.get(v);
-      
+
       if (idxU !== undefined && idxV !== undefined && idxU !== idxV) {
         const pair = idxU < idxV ? `${idxU}_${idxV}` : `${idxV}_${idxU}`;
         if (!seen.has(pair)) {
@@ -127,7 +127,7 @@ export default function GraphView({ source = 'active' }) {
     ctx.scale(t.k, t.k);
 
     const simNodes = nodesDataRef.current;
-    
+
     // Draw edges
     const isNodeLevel = simNodes.length > 0 && simNodes[0]._type === 'node';
     ctx.strokeStyle = isNodeLevel ? 'rgba(120,120,160,0.3)' : 'rgba(100,100,140,0.15)';
@@ -136,7 +136,7 @@ export default function GraphView({ source = 'active' }) {
       const u = simNodes[srcIdx];
       const v = simNodes[dstIdx];
       if (!u || !v) continue;
-      
+
       ctx.beginPath();
       ctx.moveTo(u.x, u.y);
       ctx.lineTo(v.x, v.y);
@@ -207,11 +207,11 @@ export default function GraphView({ source = 'active' }) {
       const isNode = item.type === 'node' && item.count === 1;
       const count = item.count || 1;
       const radius = isNode ? 5 : Math.max(7, Math.min(32, Math.sqrt(count) * 1.8));
-      
+
       // Deterministic initial layout (spiral/circle based on index)
       const angle = idx * (Math.PI * 2 / Math.min(visibleItems.length, 50));
       const dist = 50 + idx * 2;
-      
+
       return {
         x: w / 2 + Math.cos(angle) * dist,
         y: h / 2 + Math.sin(angle) * dist,
@@ -299,7 +299,7 @@ export default function GraphView({ source = 'active' }) {
         const targetScale = t.k * 3;
         const targetX = w / 2 - found.x * targetScale;
         const targetY = h / 2 - found.y * targetScale;
-        
+
         zoomSelection.transition().duration(700)
           .call(zoom.transform, d3.zoomIdentity.translate(targetX, targetY).scale(targetScale))
           .on('end', () => {
@@ -311,11 +311,11 @@ export default function GraphView({ source = 'active' }) {
 
     zoomSelection.on('mousemove', handleMouseMove);
     zoomSelection.on('click', handleClick);
-    zoomSelection.on('mouseleave', () => { 
-      hoveredRef.current = null; 
+    zoomSelection.on('mouseleave', () => {
+      hoveredRef.current = null;
       setSharedHoveredId(null);
-      setTooltip(null); 
-      draw(); 
+      setTooltip(null);
+      draw();
     });
 
     return () => {
@@ -333,9 +333,9 @@ export default function GraphView({ source = 'active' }) {
   return (
     <div ref={wrapperRef} className="w-full h-full relative cursor-crosshair">
       {/* Technical Grid Overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-20" 
-           style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-      
+      <div className="absolute inset-0 pointer-events-none opacity-20"
+        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+
       {/* Crosshairs */}
       <div className="absolute top-1/2 left-0 w-full h-px bg-white/5 pointer-events-none" />
       <div className="absolute left-1/2 top-0 w-px h-full bg-white/5 pointer-events-none" />

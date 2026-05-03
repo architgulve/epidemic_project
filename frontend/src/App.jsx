@@ -81,6 +81,22 @@ export default function App() {
       </nav>
 
       {/* ── Main Content Area ── */}
+      {/* Tactical HUD Header */}
+      <div className="absolute top-4 left-4 z-[1000] flex items-center gap-3">
+        <div className="bg-slate-900/80 backdrop-blur-md border border-white/20 p-2 px-3 flex items-center gap-3 shadow-[0_0_20px_rgba(0,242,255,0.1)]">
+          <div className="w-8 h-8 bg-cyan-500/20 border border-cyan-400 flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-cyan-400 rotate-45 animate-pulse" />
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="text-white font-bold tracking-[0.2em] text-sm font-mono">EPI-SCAN</span>
+              <span className="bg-cyan-500 text-[10px] text-black px-1 font-bold">LIVE</span>
+            </div>
+            <span className="text-cyan-400/60 text-[9px] font-mono tracking-widest uppercase">v0.42-tactical // diagnostic_mode</span>
+          </div>
+        </div>
+      </div>
+
       <main className="flex-1 flex flex-col min-h-0 relative p-4 lg:p-6 gap-4">
         <div className="flex flex-1 min-h-0 gap-4">
           {/* Left: Stats or Intervention */}
