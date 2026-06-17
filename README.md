@@ -85,3 +85,9 @@ The model is pre-configured with the optimized parameters described in the prima
 | **TF decay start epoch** | `30` | Linearly decays Teacher Forcing until Epoch 100. |
 
 ---
+
+## Demo Images
+<img width="1312" height="665" alt="image" src="https://github.com/user-attachments/assets/dae0a0e7-b589-48e1-8beb-b1974d814c86" />
+<img width="1312" height="665" alt="WhatsApp Image 2026-06-18 at 1 19 27 AM" src="https://github.com/user-attachments/assets/73421f47-95ed-4e53-ba30-c278fb207fa6" />
+
+
