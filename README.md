@@ -1,89 +1,301 @@
-# EpidemicNODE: Individual-Level Epidemic Forecasting via Graph Neural ODEs
+# EpidemicNODE
 
+**Individual-Level Epidemic Forecasting via Graph Neural ODEs**
 
-[![Framework: PyTorch](https://img.shields.io/badge/Framework-PyTorch-orange.svg)](https://pytorch.org/)
+EpidemicNODE is a Graph Neural Network (GNN) and Neural Ordinary Differential Equation (NODE) based epidemic forecasting framework that predicts disease progression at the individual level. Instead of modeling populations as homogeneous groups, EpidemicNODE represents every individual as a node in a heterogeneous contact graph and learns disease dynamics through a physics-constrained Graph Neural ODE architecture. The project includes synthetic population generation, graph construction, epidemic simulation, model training, a FastAPI backend, and an interactive React visualization dashboard.
 
-EpidemicNODE is an end-to-end differentiable framework for individual-level epidemic forecasting. By integrating **Neural Ordinary Differential Equations (NODEs)** with **Heterogeneous Contact Graphs**, EpidemicNODE tracks and models the dynamic health state transitions (SEIRD) of individual nodes over time while enforcing structural epidemiological inductive biases directly through its architecture.
-
-Unlike traditional regional-aggregation models (e.g., EpiGNN, STAN), EpidemicNODE works on fine-grained individual-level trajectories ($P_S, P_E, P_I, P_R, P_D$) over long horizons, ensuring accurate forecasts and zero-shot generalization across unseen network topologies.
-
----
-
-## 🚀 Key Features
-
-* **Individual-Level Resolution:** Predicts the exact 5-compartment continuous probability vector for **every single individual node** over a 30-day projection horizon.
-* **Demographically Grounded Graphs:** Fuses demographic features with high-fidelity synthetic contact networks ($N \approx 12,000$) where social connectivity follows realistic Power-Law and Zipfian distributions.
-* **Physics-Informed Architecture:** Enforces epidemiological constraints via specialized derivative heads (such as ensuring monotonic decay for Susceptible fractions $dS/dt \le 0$ and monotonic growth for Deceased fractions $dD/dt \ge 0$).
-* **Zero-Shot Generalization:** Generalizes completely out-of-the-box to unseen network topologies, structural properties, and populations without requiring retraining.
+The framework was developed as part of research conducted at the Indian Institute of Information Technology Pune and is described in the accompanying IEEE conference paper.
 
 ---
 
-## 🏗️ Architecture Overview
+## Features
 
-EpidemicNODE updates individual states continuously by executing message-passing operations on a graph and feeding the calculated spatial derivatives into an ordinary differential equation (ODE) solver.
+* Individual-level SEIRD epidemic forecasting
+* Heterogeneous contact graph generation
+* Graph Neural ODE architecture using GATv2
+* Physics-informed epidemic constraints
+* Synthetic population generation with demographic realism
+* Intervention simulation
+
+  * Mask mandates
+  * School closures
+  * Lockdowns
+  * Zone-specific policies
+* Interactive epidemic visualization dashboard
+* Zone-level risk analytics and hotspot detection
+* Streaming inference through FastAPI
+
+---
+
+## Repository Structure
 
 ```text
-       ┌────────────────────────────────────────────────────────┐
-       │                 INPUT COMPONENT VECTORS                │
-       │  Dynamic State X_i(t) [5]  │  Static Demographics v_i [9]│
-       └─────────────────────────┬──┴───────────────────────────┘
-                                 │
-                                 ▼
-       ┌────────────────────────────────────────────────────────┐
-       │             GRAPH NEURAL NETWORK (SPATIAL)             │
-       │  GATv2 Layer 1 (32 Dim, 2 Heads, Dropout: 0.20)        │
-       │                           │                            │
-       │  GATv2 Layer 2 (32 Dim, 2 Heads, Non-Concat)           │
-       └─────────────────────────┬──────────────────────────────┘
-                                 │
-                                 ▼
-       ┌────────────────────────────────────────────────────────┐
-       │           CONTINUOUS DERIVATIVE EXTRACTOR              │
-       │  MLP Layer 1 (64 Hidden Nodes + Tanh Activation)       │
-       │                           │                            │
-       │  MLP Layer 2 (Output Projection Map)                   │
-       └─────────────────────────┬──────────────────────────────┘
-                                 │
-                                 ▼
-       ┌────────────────────────────────────────────────────────┐
-       │         PHYSICS-INFORMED RECTIFICATION HEAD            │
-       │  Softplus Constraint Transformations                   │
-       │  [Enforces Monotonic Strictness: dS/dt <= 0, dD/dt >= 0]│
-       └─────────────────────────┬──────────────────────────────┘
-                                 │  f(X_i(t), t) [Derivatives]
-                                 ▼
-       ┌────────────────────────────────────────────────────────┐
-       │               NUMERICAL INTEGRATION BLOCK              │
-       │  torchdiffeq ODE Solver (Fourth-Order Runge-Kutta / RK4)│
-       │  Constant-Memory Backpropagation via Adjoint Method    │
-       └─────────────────────────┬──────────────────────────────┘
-                                 │
-                                 ▼
-       ┌────────────────────────────────────────────────────────┐
-       │                OUTPUT FORECAST HORIZON                 │
-       │  Updated Probability Trajectory Forecasts: X_i(t + 1)  │
-       └────────────────────────────────────────────────────────┘
+.
+├── api/
+│   └── main.py                 # FastAPI inference server
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── utils/
+│   │   └── store.js
+│   └── public/
+│
+├── notebooks/
+│   ├── 01_generate_population.ipynb
+│   ├── 02_build_graphs.ipynb
+│   ├── 03_seird_simulation.ipynb
+│   ├── 04_train_tgn.ipynb
+│   └── 05_api_server.ipynb
+│
+├── graphs/                     # Generated graph snapshots
+├── model/                      # Trained EpidemicNODE weights
+├── data/
+│   ├── graph.pt
+│   └── population.parquet
+│
+├── predict_payload.json
+├── test_predict.py
+├── test_load.py
+└── README.md
 ```
-## 📊 Hyperparameter Configuration
 
-The model is pre-configured with the optimized parameters described in the primary research paper:
+Repository contains a complete epidemic forecasting pipeline including population generation, graph construction, simulation, model training, inference, and visualization.
 
-| Hyperparameter | Value | Description |
-| :--- | :--- | :--- |
-| **Node feature dimension** | `9` | Dimensions of the continuous/static demographic array. |
-| **GATv2 hidden dim** | `32 per head` | Intermediary channel layout per layer. |
-| **GATv2 attention heads** | `2` | Number of multi-head structures (`concat=False`). |
-| **GATv2 layers** | `2` | Graph attention message-passing depth. |
-| **Derivative MLP layers** | `2` | Hidden nodes: 64, with `Tanh` activation function. |
-| **ODE solver** | `RK4` | Fourth-order Runge-Kutta method, step size = `1.0`. |
-| **Learning rate ($\eta$)** | `3e-4` | Initial coefficient managed via Cosine Annealing. |
-| **Weight decay ($\lambda$)** | `1e-5` | Controlled AdamW regularizer factor. |
-| **Gradient clip** | `< 1.0` | Maximum absolute L2 norm threshold. |
-| **Feature dropout** | `0.20` | Dynamic edge feature masking probability. |
-| **Batch size** | `1 graph` | Single whole-population computational graph execution. |
-| **Epochs** | `100` | Target length of total operational cycle training. |
-| **TF decay start epoch** | `30` | Linearly decays Teacher Forcing until Epoch 100. |
+---
 
+## Methodology
+
+### 1. Synthetic Population Generation
+
+A synthetic population of approximately 12,000 individuals is generated with attributes including:
+
+* Age
+* Sex
+* Socioeconomic status
+* Social activity frequency
+* Mobility score
+* Vaccination status
+* Comorbidity score
+* Geographic zone
+
+The population is designed to mimic realistic demographic and behavioral distributions.
+
+---
+
+### 2. Contact Graph Construction
+
+The heterogeneous contact graph combines multiple interaction layers:
+
+#### Household Layer
+
+Fully connected household cliques.
+
+#### Workplace / School Layer
+
+Connections between individuals belonging to the same institution.
+
+#### Geographic Similarity Layer
+
+k-nearest-neighbor connections based on demographic similarity within zones.
+
+All layers are fused into a weighted graph that preserves realistic contact patterns.
+
+---
+
+### 3. Epidemic Simulation
+
+Disease spread follows an SEIRD formulation:
+
+* Susceptible (S)
+* Exposed (E)
+* Infectious (I)
+* Recovered (R)
+* Deceased (D)
+
+## Individual transition parameters are derived from demographic and health attributes. Infection propagation uses an Independent Cascade transmission model.
+
+### 4. Graph Neural ODE
+
+The forecasting model combines:
+
+* GATv2 graph message passing
+* Neural Ordinary Differential Equations
+* Physics-constrained derivative functions
+
+Constraints ensure:
+
+* Susceptibility can only decrease
+* Mortality can only increase
+
+## These inductive biases enforce epidemiologically valid dynamics during training and inference.
+
+## Model Architecture
+
+```text
+Node Features
+      │
+      ▼
+GATv2 Layer
+      │
+      ▼
+GATv2 Layer
+      │
+      ▼
+Derivative Network
+      │
+      ▼
+Neural ODE Solver (RK4)
+      │
+      ▼
+SEIRD Trajectory Forecast
+```
+
+The backend implementation uses two GATv2 layers followed by a derivative head integrated using a Neural ODE solver.
+
+---
+
+## Backend API
+
+### Health Check
+
+```http
+GET /health
+```
+
+Returns:
+
+```json
+{
+  "status": "ok",
+  "default_seed": 42
+}
+```
+
+---
+
+### Upload Initial Infection Dataset
+
+```http
+POST /api/upload
+```
+
+Upload a CSV containing:
+
+```csv
+node_id,infected
+15,1
+201,1
+825,1
+```
+
+Response:
+
+```json
+{
+  "graph_id": "abc12345",
+  "n_nodes": 12000,
+  "n_infected": 3
+}
+```
+
+---
+
+### Run Forecast
+
+```http
+POST /api/predict
+```
+
+Example payload:
+
+```json
+{
+  "graph_id": "abc12345",
+  "interventions": {
+    "mask_mandate": 70,
+    "school_closure": true,
+    "lockdown": false
+  }
+}
+```
+
+The endpoint streams epidemic predictions for 30 days using Server-Sent Events (SSE).
+
+---
+
+## Frontend Dashboard
+
+The React dashboard provides:
+
+* Geographic heatmaps
+* Zone analytics
+* Epidemic timeline visualization
+* Graph exploration
+* Intervention controls
+* Population statistics
+* Risk hotspot analysis
+
+Frontend components include analytics, graph visualization, maps, timelines, intervention panels, and statistics dashboards.
+
+---
+
+## Installation
+
+### Backend
+
+```bash
+git clone https://github.com/<username>/EpidemicNODE.git
+cd EpidemicNODE
+
+python -m venv venv
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+Run server:
+
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+
+---
+
+### Frontend
+
+```bash
+cd frontend
+
+npm install
+npm run dev
+```
+
+The dashboard will be available at:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## Research Contributions
+
+* Individual-level epidemic prediction
+* Heterogeneous contact graph generation
+* Physics-constrained Graph Neural ODE architecture
+* Multi-graph generalization to unseen populations
+* Interactive epidemic intervention analysis
+
+The proposed framework achieved strong generalization performance across unseen graph topologies and demonstrates the feasibility of combining Graph Neural Networks with Neural ODEs for epidemic forecasting.
+
+
+
+---
+
+## License
+
+This project is intended for academic and research purposes. Please contact the authors for collaboration or usage inquiries.
 ---
 
 ## Demo Images
