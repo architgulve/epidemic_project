@@ -85,16 +85,3 @@ The model is pre-configured with the optimized parameters described in the prima
 | **TF decay start epoch** | `30` | Linearly decays Teacher Forcing until Epoch 100. |
 
 ---
-
-## 🛠️ Project Structure
-
-```text
-├── simulator/
-│   └── seird_sim.py         # Stochastic Independent Cascade SEIRD simulator
-├── models/
-│   ├── layers.py            # Neural network layers (GATv2, MLP layers)
-│   └── epidemic_node.py     # Continuous derivative blocks & physical bound heads
-├── train.py                 # Core initialization, training loops, and loss monitoring
-├── evaluate.py              # Zero-shot validation suite across alternate graph layouts
-├── requirements.txt         # Package configuration prerequisites
-└── README.md                # Project documentation
